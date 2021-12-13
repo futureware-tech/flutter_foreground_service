@@ -3,6 +3,7 @@ import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() => runApp(const ExampleApp());
 
@@ -21,8 +22,12 @@ class FirstTaskHandler extends TaskHandler {
     final customData =
         await FlutterForegroundTask.getData<String>(key: 'customData');
     print('customData: $customData');
-    periodicTimer = Timer.periodic(const Duration(seconds: 5), (tick) {
+    periodicTimer = Timer.periodic(const Duration(seconds: 5), (tick) async {
       print('tick: ${DateTime.now()}');
+      final location = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      );
+      print('Location lat ${location.latitude} long = ${location.longitude}');
     });
   }
 
@@ -81,7 +86,46 @@ class _ExampleAppState extends State<ExampleApp> {
     );
   }
 
+  Future<bool> _checkPermissions() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Location services are not enabled don't continue
+      // accessing the position and request users of the
+      // App to enable the location services.
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Permissions are denied, next time you could try
+        // requesting permissions again (this is also where
+        // Android's shouldShowRequestPermissionRationale
+        // returned true. According to Android guidelines
+        // your App should show an explanatory UI now.
+        return Future.error('Location permissions are denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are denied forever, handle appropriately.
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+    return true;
+  }
+
   Future<bool> _startForegroundTask() async {
+    try {
+      await _checkPermissions();
+    } catch (e) {
+      print(e.toString());
+    }
     // You can save data using the saveData function.
     await FlutterForegroundTask.saveData(key: 'customData', value: 'hello');
 
