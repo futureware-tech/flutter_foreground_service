@@ -29,7 +29,9 @@ class FirstTaskHandler extends TaskHandler {
         await FlutterForegroundTask.getData<String>(key: 'customData');
     print('customData: $customData');
 
+    _addEvent('-- Service (re)started --', sendPort);
     _updateLocation(sendPort);
+
     periodicTimer = Timer.periodic(const Duration(minutes: 5), (tick) async {
       await _updateLocation(sendPort);
     });
@@ -46,13 +48,19 @@ class FirstTaskHandler extends TaskHandler {
       desiredAccuracy: LocationAccuracy.best,
     );
 
+    _addEvent(
+        '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - lat ${location.latitude} lon = ${location.longitude}',
+        sendPort);
+
+    print('Location lat ${location.latitude} lon = ${location.longitude}');
+  }
+
+  void _addEvent(String event, SendPort? sendPort) {
     List<String> list = historyBox.get('history') ?? <String>[];
-    list.add(
-        '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - lat ${location.latitude} lon = ${location.longitude}');
+    list.add(event);
 
     historyBox.put('history', list);
     sendPort?.send(list);
-    print('Location lat ${location.latitude} lon = ${location.longitude}');
   }
 
   @override
@@ -60,10 +68,10 @@ class FirstTaskHandler extends TaskHandler {
 
   @override
   Future<void> onDestroy(DateTime timestamp) async {
+    _addEvent('-- Service stopped at $timestamp --', null);
     // You can use the clearAllData function to clear all the stored data.
     await FlutterForegroundTask.clearAllData();
     periodicTimer.cancel();
-    historyBox.clear();
   }
 
   @override
@@ -223,13 +231,49 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
     );
   }
 
+  Widget _batteryOptimizationWidget() {
+    return FutureBuilder(
+        future: FlutterForegroundTask.isIgnoringBatteryOptimizations,
+        builder: (context, snapshot) {
+          if (snapshot.data == false) {
+            return Container(
+              color: Colors.red,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text('Battery optimized! Disable optimization!'),
+                  TextButton(
+                    onPressed: () async {
+                      await FlutterForegroundTask
+                          .openIgnoreBatteryOptimizationSettings();
+                    },
+                    child: Text('Open Settings'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            return SizedBox();
+          }
+        });
+  }
+
   Widget _buildContentView() => Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _buildTestButton('start', onPressed: _startForegroundTask),
+          _batteryOptimizationWidget(),
+          FutureBuilder(
+              future: FlutterForegroundTask.isRunningService,
+              builder: (context, snapshot) {
+                if (snapshot.data == true) {
+                  return Text('Service is running');
+                }
+                return _buildTestButton('start',
+                    onPressed: _startForegroundTask);
+              }),
           _buildTestButton('stop', onPressed: _stopForegroundTask),
           Divider(),
-          Text('Tracking history every 5 min'),
+          Text('Tracking history every 5 min (${history?.length} items)'),
           Expanded(child: _historyInfoWidget()),
         ],
       );
