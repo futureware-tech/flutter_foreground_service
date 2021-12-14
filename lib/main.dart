@@ -30,7 +30,7 @@ class FirstTaskHandler extends TaskHandler {
     print('customData: $customData');
 
     _updateLocation(sendPort);
-    periodicTimer = Timer.periodic(const Duration(seconds: 5), (tick) async {
+    periodicTimer = Timer.periodic(const Duration(minutes: 5), (tick) async {
       await _updateLocation(sendPort);
     });
   }
@@ -63,6 +63,7 @@ class FirstTaskHandler extends TaskHandler {
     // You can use the clearAllData function to clear all the stored data.
     await FlutterForegroundTask.clearAllData();
     periodicTimer.cancel();
+    historyBox.clear();
   }
 
   @override
@@ -79,7 +80,7 @@ class ExampleApp extends StatefulWidget {
   _ExampleAppState createState() => _ExampleAppState();
 }
 
-class _ExampleAppState extends State<ExampleApp> {
+class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
   ReceivePort? _receivePort;
   List<String>? history;
 
@@ -228,7 +229,7 @@ class _ExampleAppState extends State<ExampleApp> {
           _buildTestButton('start', onPressed: _startForegroundTask),
           _buildTestButton('stop', onPressed: _stopForegroundTask),
           Divider(),
-          Text('Tracking history'),
+          Text('Tracking history every 5 min'),
           Expanded(child: _historyInfoWidget()),
         ],
       );
@@ -238,4 +239,14 @@ class _ExampleAppState extends State<ExampleApp> {
         child: Text(text),
         onPressed: onPressed,
       );
+
+  @override
+  String? get restorationId => '1';
+
+  @override
+  void restoreState(RestorationBucket? oldBucket, bool initialRestore) async {
+    if (await FlutterForegroundTask.isRunningService) {
+      await _startForegroundTask();
+    }
+  }
 }
