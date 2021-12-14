@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
 
 void main() => runApp(const ExampleApp());
 
@@ -15,6 +16,7 @@ void startCallback() {
 
 class FirstTaskHandler extends TaskHandler {
   late Timer periodicTimer;
+  final Map<String, String> locationHistory = {};
 
   @override
   Future<void> onStart(DateTime timestamp, SendPort? sendPort) async {
@@ -22,13 +24,22 @@ class FirstTaskHandler extends TaskHandler {
     final customData =
         await FlutterForegroundTask.getData<String>(key: 'customData');
     print('customData: $customData');
+
+    _updateLocation(sendPort);
     periodicTimer = Timer.periodic(const Duration(seconds: 5), (tick) async {
-      print('tick: ${DateTime.now()}');
-      final location = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.best,
-      );
-      print('Location lat ${location.latitude} long = ${location.longitude}');
+      await _updateLocation(sendPort);
     });
+  }
+
+  Future<void> _updateLocation(SendPort? sendPort) async {
+    final location = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.best,
+    );
+    locationHistory[DateFormat(DateFormat.HOUR24_MINUTE_SECOND)
+            .format(DateTime.now())] =
+        'lat ${location.latitude} lon = ${location.longitude}';
+    sendPort?.send(locationHistory);
+    print('Location lat ${location.latitude} lon = ${location.longitude}');
   }
 
   @override
@@ -57,6 +68,7 @@ class ExampleApp extends StatefulWidget {
 
 class _ExampleAppState extends State<ExampleApp> {
   ReceivePort? _receivePort;
+  Map<String, String> history = {};
 
   Future<void> _initForegroundTask() async {
     await FlutterForegroundTask.init(
@@ -143,16 +155,16 @@ class _ExampleAppState extends State<ExampleApp> {
     if (receivePort != null) {
       _receivePort = receivePort;
       _receivePort?.listen((message) {
-        if (message is DateTime) {
-          print('receive timestamp: $message');
-        } else if (message is int) {
-          print('receive updateCount: $message');
+        if (message is Map<String, String>) {
+          setState(() {
+            history.clear();
+            history.addAll(message);
+          });
         }
       });
 
       return true;
     }
-
     return false;
   }
 
@@ -189,22 +201,30 @@ class _ExampleAppState extends State<ExampleApp> {
     );
   }
 
-  Widget _buildContentView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildTestButton('start', onPressed: _startForegroundTask),
-          _buildTestButton('stop', onPressed: _stopForegroundTask),
-        ],
-      ),
+  Widget _historyInfoWidget() {
+    List<String> historyResult =
+        history.entries.map((e) => '${e.key} - ${e.value}').toList();
+    return ListView.builder(
+      shrinkWrap: true,
+      itemCount: historyResult.length,
+      itemBuilder: (context, i) => Text(historyResult[i]),
     );
   }
 
-  Widget _buildTestButton(String text, {VoidCallback? onPressed}) {
-    return ElevatedButton(
-      child: Text(text),
-      onPressed: onPressed,
-    );
-  }
+  Widget _buildContentView() => Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _buildTestButton('start', onPressed: _startForegroundTask),
+          _buildTestButton('stop', onPressed: _stopForegroundTask),
+          Divider(),
+          Text('Tracking history'),
+          Expanded(child: _historyInfoWidget()),
+        ],
+      );
+
+  Widget _buildTestButton(String text, {VoidCallback? onPressed}) =>
+      ElevatedButton(
+        child: Text(text),
+        onPressed: onPressed,
+      );
 }
