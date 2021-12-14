@@ -4,7 +4,9 @@ import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() => runApp(const ExampleApp());
 
@@ -16,10 +18,12 @@ void startCallback() {
 
 class FirstTaskHandler extends TaskHandler {
   late Timer periodicTimer;
-  final Map<String, String> locationHistory = {};
+  late Box historyBox;
+  final boxName = 'history';
 
   @override
   Future<void> onStart(DateTime timestamp, SendPort? sendPort) async {
+    await initHive();
     // You can use the getData function to get the data you saved.
     final customData =
         await FlutterForegroundTask.getData<String>(key: 'customData');
@@ -31,14 +35,23 @@ class FirstTaskHandler extends TaskHandler {
     });
   }
 
+  Future<void> initHive() async {
+    final path = (await getApplicationDocumentsDirectory()).path.toString();
+    Hive.init(path);
+    historyBox = await Hive.openBox<List<String>>(boxName);
+  }
+
   Future<void> _updateLocation(SendPort? sendPort) async {
     final location = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.best,
     );
-    locationHistory[DateFormat(DateFormat.HOUR24_MINUTE_SECOND)
-            .format(DateTime.now())] =
-        'lat ${location.latitude} lon = ${location.longitude}';
-    sendPort?.send(locationHistory);
+
+    List<String> list = historyBox.get('history') ?? <String>[];
+    list.add(
+        '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - lat ${location.latitude} lon = ${location.longitude}');
+
+    historyBox.put('history', list);
+    sendPort?.send(list);
     print('Location lat ${location.latitude} lon = ${location.longitude}');
   }
 
@@ -68,7 +81,7 @@ class ExampleApp extends StatefulWidget {
 
 class _ExampleAppState extends State<ExampleApp> {
   ReceivePort? _receivePort;
-  Map<String, String> history = {};
+  List<String>? history;
 
   Future<void> _initForegroundTask() async {
     await FlutterForegroundTask.init(
@@ -155,10 +168,9 @@ class _ExampleAppState extends State<ExampleApp> {
     if (receivePort != null) {
       _receivePort = receivePort;
       _receivePort?.listen((message) {
-        if (message is Map<String, String>) {
+        if (message is List<String>) {
           setState(() {
-            history.clear();
-            history.addAll(message);
+            history = message;
           });
         }
       });
@@ -202,12 +214,11 @@ class _ExampleAppState extends State<ExampleApp> {
   }
 
   Widget _historyInfoWidget() {
-    List<String> historyResult =
-        history.entries.map((e) => '${e.key} - ${e.value}').toList();
+    if (history == null) return SizedBox();
     return ListView.builder(
       shrinkWrap: true,
-      itemCount: historyResult.length,
-      itemBuilder: (context, i) => Text(historyResult[i]),
+      itemCount: history?.length,
+      itemBuilder: (context, i) => Text(history![i]),
     );
   }
 

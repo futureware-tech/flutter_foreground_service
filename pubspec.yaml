@@ -26,6 +26,8 @@ dependencies:
   flutter_foreground_task: ^3.5.2
   geolocator: ^8.0.0
   intl:
+  hive: ^2.0.4
+  path_provider:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
