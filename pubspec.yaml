@@ -24,7 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_foreground_task: ^3.5.2
-  geolocator: ^8.0.0
+  geolocator: ^8.0.1
   intl:
   hive: ^2.0.4
   path_provider:
