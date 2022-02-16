@@ -189,9 +189,7 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
     return false;
   }
 
-  Future<bool> _stopForegroundTask() async {
-    return await FlutterForegroundTask.stopService();
-  }
+  Future<bool> _stopForegroundTask() => FlutterForegroundTask.stopService();
 
   @override
   void initState() {
@@ -271,7 +269,11 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
                 return _buildTestButton('start',
                     onPressed: _startForegroundTask);
               }),
-          _buildTestButton('stop', onPressed: _stopForegroundTask),
+          _buildTestButton('stop', onPressed: () async {
+            await _stopForegroundTask();
+            // Rebuild UI after service stopped
+            setState(() {});
+          }),
           Divider(),
           Text('Tracking history every 5 min (${history?.length} items)'),
           Expanded(child: _historyInfoWidget()),
