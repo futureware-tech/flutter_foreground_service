@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() => runApp(const ExampleApp());
 
@@ -122,7 +123,7 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
 
   Future<bool> _checkPermissions() async {
     bool serviceEnabled;
-    LocationPermission permission;
+    bool isPermissionGranted;
 
     // Test if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -133,25 +134,16 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
       return Future.error('Location services are disabled.');
     }
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // Permissions are denied, next time you could try
-        // requesting permissions again (this is also where
-        // Android's shouldShowRequestPermissionRationale
-        // returned true. According to Android guidelines
-        // your App should show an explanatory UI now.
-        return Future.error('Location permissions are denied');
-      }
-    }
+    isPermissionGranted =
+        await Permission.locationWhenInUse.request().isGranted;
+    final isPermissionAlwaysGranted =
+        await Permission.locationAlways.request().isGranted;
 
-    if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever, handle appropriately.
-      return Future.error(
-          'Location permissions are permanently denied, we cannot request permissions.');
+    if (isPermissionGranted == true && isPermissionAlwaysGranted == true) {
+      return true;
     }
-    return true;
+    // Permissions are denied forever, handle appropriately.
+    return Future.error('Location permissions denied');
   }
 
   Future<bool> _startForegroundTask() async {
