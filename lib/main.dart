@@ -22,33 +22,53 @@ class FirstTaskHandler extends TaskHandler {
   late Box historyBox;
   final boxName = 'history';
 
+  late StreamSubscription<Position> _positionSubscription;
+
+  late Position latestPosition;
+
   @override
   Future<void> onStart(DateTime timestamp, SendPort? sendPort) async {
+    print('init hive');
     await initHive();
     // You can use the getData function to get the data you saved.
-    final customData =
-        await FlutterForegroundTask.getData<String>(key: 'customData');
-    print('customData: $customData');
+    // TODO: failing
+    // final customData =
+    //     await FlutterForegroundTask.getData<String>(key: 'customData');
+    // print('customData: $customData');
 
     _addEvent('-- Service (re)started --', sendPort);
-    _updateLocation(sendPort);
+    // Get the first value
+    latestPosition = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.best,
+    );
 
-    periodicTimer = Timer.periodic(const Duration(minutes: 5), (tick) async {
-      await _updateLocation(sendPort);
+    _updateLocation(sendPort, latestPosition);
+
+    final LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.best,
+    );
+    _positionSubscription =
+        Geolocator.getPositionStream(locationSettings: locationSettings)
+            .listen((position) {
+      latestPosition = position;
+    });
+
+    periodicTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      _updateLocation(sendPort, latestPosition);
     });
   }
 
   Future<void> initHive() async {
-    final path = (await getApplicationDocumentsDirectory()).path.toString();
-    Hive.init(path);
-    historyBox = await Hive.openBox<List<String>>(boxName);
+    try {
+      final path = (await getApplicationDocumentsDirectory()).path.toString();
+      Hive.init(path);
+      historyBox = await Hive.openBox<List<String>>(boxName);
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
-  Future<void> _updateLocation(SendPort? sendPort) async {
-    final location = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.best,
-    );
-
+  Future<void> _updateLocation(SendPort? sendPort, Position location) async {
     _addEvent(
         '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - lat ${location.latitude} lon = ${location.longitude}',
         sendPort);
@@ -73,6 +93,7 @@ class FirstTaskHandler extends TaskHandler {
     // You can use the clearAllData function to clear all the stored data.
     await FlutterForegroundTask.clearAllData();
     periodicTimer.cancel();
+    _positionSubscription.cancel();
   }
 
   @override

@@ -27,7 +27,7 @@ dependencies:
   geolocator: ^8.0.1
   permission_handler: ^9.1.0
   intl:
-  hive: ^2.0.4
+  hive: 2.0.4
   path_provider:
 
   # The following adds the Cupertino Icons font to your application.
