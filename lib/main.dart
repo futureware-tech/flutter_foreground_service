@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/material.dart';
@@ -155,13 +156,28 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
       return Future.error('Location services are disabled.');
     }
 
-    isPermissionGranted =
-        await Permission.locationWhenInUse.request().isGranted;
-    final isPermissionAlwaysGranted =
-        await Permission.locationAlways.request().isGranted;
+    // TODO: Handle Permissions
+    if (Platform.isAndroid) {
+      isPermissionGranted =
+          await Permission.locationWhenInUse.request().isGranted;
+      final isPermissionAlwaysGranted =
+          await Permission.locationAlways.request().isGranted;
 
-    if (isPermissionGranted == true && isPermissionAlwaysGranted == true) {
-      return true;
+      if (isPermissionGranted == true && isPermissionAlwaysGranted == true) {
+        return true;
+      }
+    } else {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return Future.error('Location permissions on iOS are denied');
+        } else {
+          return true;
+        }
+      } else {
+        return true;
+      }
     }
     // Permissions are denied forever, handle appropriately.
     return Future.error('Location permissions denied');
@@ -172,6 +188,8 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
       await _checkPermissions();
     } catch (e) {
       print(e.toString());
+      print('Permissions are denied');
+      return false;
     }
     // You can save data using the saveData function.
     await FlutterForegroundTask.saveData(key: 'customData', value: 'hello');
