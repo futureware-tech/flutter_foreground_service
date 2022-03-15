@@ -253,10 +253,11 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
 
   Widget _historyInfoWidget() {
     if (history == null) return SizedBox();
+    var reversedList = history?.reversed.toList();
     return ListView.builder(
       shrinkWrap: true,
-      itemCount: history?.length,
-      itemBuilder: (context, i) => Text(history![i]),
+      itemCount: reversedList?.length,
+      itemBuilder: (context, i) => Text(reversedList![i]),
     );
   }
 
