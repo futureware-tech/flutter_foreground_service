@@ -4,6 +4,8 @@ import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:foreground_service/beacon_example.dart';
+import 'package:foreground_service/model/beacon_log.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +22,7 @@ void startCallback() {
 
 class FirstTaskHandler extends TaskHandler {
   late Timer periodicTimer;
+  late Timer beaconPeriodicTimer;
   late Box historyBox;
   final boxName = 'history';
 
@@ -27,43 +30,58 @@ class FirstTaskHandler extends TaskHandler {
 
   late Position latestPosition;
 
+  final beaconExample = BeaconExample();
+
   @override
   Future<void> onStart(DateTime timestamp, SendPort? sendPort) async {
-    print('init hive');
-    await initHive();
-    // You can use the getData function to get the data you saved.
-    // TODO: failing
-    // final customData =
-    //     await FlutterForegroundTask.getData<String>(key: 'customData');
-    // print('customData: $customData');
+    try {
+      print('init hive');
+      await initHive();
+      // You can use the getData function to get the data you saved.
+      // TODO: failing
+      // final customData =
+      //     await FlutterForegroundTask.getData<String>(key: 'customData');
+      // print('customData: $customData');
 
-    _addEvent('-- Service (re)started --', sendPort);
-    // Get the first value
-    latestPosition = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.best,
-    );
+      _addEvent('-- Service (re)started --', sendPort);
+      // Get the first value
+      latestPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      );
 
-    _updateLocation(sendPort, latestPosition);
-
-    final LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.best,
-    );
-    _positionSubscription =
-        Geolocator.getPositionStream(locationSettings: locationSettings)
-            .listen((position) {
-      latestPosition = position;
-    });
-
-    periodicTimer = Timer.periodic(const Duration(minutes: 5), (_) {
       _updateLocation(sendPort, latestPosition);
-    });
+
+      final LocationSettings locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.best,
+      );
+      _positionSubscription =
+          Geolocator.getPositionStream(locationSettings: locationSettings)
+              .listen((position) {
+        latestPosition = position;
+      });
+
+      periodicTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+        _updateLocation(sendPort, latestPosition);
+      });
+
+      beaconExample.start();
+
+      beaconPeriodicTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+        beaconExample.sendData(sendPort);
+      });
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   Future<void> initHive() async {
     try {
       final path = (await getApplicationDocumentsDirectory()).path.toString();
       Hive.init(path);
+
       historyBox = await Hive.openBox<List<String>>(boxName);
+      beaconExample.beaconHistoryBox =
+          await Hive.openBox<List<String>>(beaconExample.beaconBoxName);
     } catch (e) {
       print(e.toString());
     }
@@ -94,7 +112,9 @@ class FirstTaskHandler extends TaskHandler {
     // You can use the clearAllData function to clear all the stored data.
     await FlutterForegroundTask.clearAllData();
     periodicTimer.cancel();
+    beaconPeriodicTimer.cancel();
     _positionSubscription.cancel();
+    beaconExample.stop();
   }
 
   @override
@@ -212,6 +232,8 @@ class _ExampleAppState extends State<ExampleApp> with RestorationMixin {
           setState(() {
             history = message;
           });
+        } else if (message is BeaconLog) {
+          print('Returned from FS ${message.log}');
         }
       });
 
