@@ -9,8 +9,8 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 
 class BeaconExample {
-  late Box? beaconHistoryBox;
-  final beaconBoxName = 'beacon';
+  late Box? beaconMonitoringBox;
+  final beaconMonitoringBoxName = 'beacon';
 
   final regions = <Region>[
     Region(
@@ -77,9 +77,9 @@ class BeaconExample {
       //       'Beacon with  idendifier: ${rangingResult.region.identifier} in range');
       // });
       monitoringResult(regions).listen((MonitoringResult monitoringResult) {
-        addBeaconLog(
+        addMonitoringBeaconLog(
             'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringEventType.toString()}');
-        addBeaconLog(
+        addMonitoringBeaconLog(
             'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringState.toString()}');
       });
     } catch (e) {
@@ -87,13 +87,14 @@ class BeaconExample {
     }
   }
 
-  void addBeaconLog(String log) {
-    List<String> list = beaconHistoryBox?.get(beaconBoxName) ?? <String>[];
+  void addMonitoringBeaconLog(String log) {
+    List<String> list =
+        beaconMonitoringBox?.get(beaconMonitoringBoxName) ?? <String>[];
     list.add(
-        '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - $runtimeType');
+        '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - $log');
 
-    beaconHistoryBox?.put(beaconBoxName, list);
-    print('Beacon log: $log');
+    beaconMonitoringBox?.put(beaconMonitoringBoxName, list);
+    print('Beacon monitoring log: $log');
   }
 
   Future<void> stop() async {
@@ -102,6 +103,9 @@ class BeaconExample {
   }
 
   void sendData(SendPort? sendPort) {
-    sendPort?.send(BeaconLog(beaconHistoryBox?.get(beaconBoxName)));
+    if (beaconMonitoringBox?.get(beaconMonitoringBoxName) != null) {
+      sendPort?.send(BeaconMonitoringLog(
+          beaconMonitoringBox?.get(beaconMonitoringBoxName)));
+    }
   }
 }
