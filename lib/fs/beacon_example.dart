@@ -12,6 +12,9 @@ class BeaconExample {
   late Box? beaconMonitoringBox;
   final beaconMonitoringBoxName = 'beacon';
 
+  late Box? beaconRangingBox;
+  final beaconRangingBoxName = 'beaconRanging';
+
   final regions = <Region>[
     Region(
       identifier: '001B44113AB7',
@@ -72,10 +75,10 @@ class BeaconExample {
     print('Start beacon service');
     try {
       await flutterBeacon.initializeAndCheckScanning;
-      // rangingResult(regions).listen((RangingResult rangingResult) {
-      //   print(
-      //       'Beacon with  idendifier: ${rangingResult.region.identifier} in range');
-      // });
+      rangingResult(regions).listen((RangingResult rangingResult) {
+        addRangingBeaconLog(
+            'Beacon with  idendifier: ${rangingResult.region.identifier} in range');
+      });
       monitoringResult(regions).listen((MonitoringResult monitoringResult) {
         addMonitoringBeaconLog(
             'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringEventType.toString()}');
@@ -97,6 +100,16 @@ class BeaconExample {
     print('Beacon monitoring log: $log');
   }
 
+  void addRangingBeaconLog(String log) {
+    List<String> list =
+        beaconRangingBox?.get(beaconRangingBoxName) ?? <String>[];
+    list.add(
+        '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - $log');
+
+    beaconRangingBox?.put(beaconRangingBoxName, list);
+    print('Beacon ranging log: $log');
+  }
+
   Future<void> stop() async {
     regions.clear();
     flutterBeacon.close;
@@ -106,6 +119,10 @@ class BeaconExample {
     if (beaconMonitoringBox?.get(beaconMonitoringBoxName) != null) {
       sendPort?.send(BeaconMonitoringLog(
           beaconMonitoringBox?.get(beaconMonitoringBoxName)));
+    }
+    if (beaconRangingBox?.get(beaconRangingBoxName) != null) {
+      sendPort
+          ?.send(BeaconRangingLog(beaconRangingBox?.get(beaconRangingBoxName)));
     }
   }
 }

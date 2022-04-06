@@ -22,8 +22,9 @@ class _ExampleAppState extends State<ExampleApp>
     with RestorationMixin, TickerProviderStateMixin {
   TabController? _tabController;
   ReceivePort? _receivePort;
-  List<String>? history;
-  List<String>? beaconLogs;
+  List<String>? locationLog;
+  List<String>? beaconMonitoringLog;
+  List<String>? beaconRangingLog;
 
   Future<void> _initForegroundTask() async {
     await FlutterForegroundTask.init(
@@ -120,11 +121,15 @@ class _ExampleAppState extends State<ExampleApp>
       _receivePort?.listen((message) {
         if (message is List<String>) {
           setState(() {
-            history = message;
+            locationLog = message;
           });
         } else if (message is BeaconMonitoringLog) {
           setState(() {
-            beaconLogs = message.log;
+            beaconMonitoringLog = message.log;
+          });
+        } else if (message is BeaconRangingLog) {
+          setState(() {
+            beaconRangingLog = message.log;
           });
         }
       });
@@ -139,7 +144,7 @@ class _ExampleAppState extends State<ExampleApp>
   @override
   void initState() {
     _initForegroundTask();
-    _tabController = new TabController(length: 2, vsync: this);
+    _tabController = new TabController(length: 3, vsync: this);
     super.initState();
   }
 
@@ -162,8 +167,17 @@ class _ExampleAppState extends State<ExampleApp>
             bottom: TabBar(
               controller: _tabController,
               tabs: [
-                Tab(icon: Icon(Icons.directions_car)),
-                Tab(icon: Icon(Icons.bluetooth)),
+                Tab(
+                  icon: Icon(Icons.directions_car),
+                ),
+                Tab(
+                  icon: Icon(Icons.bluetooth),
+                  text: 'M',
+                ),
+                Tab(
+                  icon: Icon(Icons.bluetooth),
+                  text: 'R',
+                ),
               ],
             ),
           ),
@@ -171,7 +185,8 @@ class _ExampleAppState extends State<ExampleApp>
             controller: _tabController,
             children: [
               _buildLocationContentView(),
-              _buildBeaconContentView(),
+              _buildBeaconMonitoringContentView(),
+              _buildBeaconRangingContentView(),
             ],
           ),
         ),
@@ -179,11 +194,21 @@ class _ExampleAppState extends State<ExampleApp>
     );
   }
 
-  Widget _buildBeaconContentView() => Column(
+  Widget _buildBeaconMonitoringContentView() => Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text('Tracking history every 1 min (${beaconLogs?.length} items)'),
-          Expanded(child: _logsWidget(beaconLogs)),
+          Text(
+              'Tracking history every 5 sec (${beaconMonitoringLog?.length} items)'),
+          Expanded(child: _logsWidget(beaconMonitoringLog)),
+        ],
+      );
+
+  Widget _buildBeaconRangingContentView() => Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+              'Tracking history every 5 sec (${beaconRangingLog?.length} items)'),
+          Expanded(child: _logsWidget(beaconRangingLog)),
         ],
       );
 
@@ -243,8 +268,8 @@ class _ExampleAppState extends State<ExampleApp>
             setState(() {});
           }),
           Divider(),
-          Text('Tracking history every 5 min (${history?.length} items)'),
-          Expanded(child: _logsWidget(history)),
+          Text('Tracking history every 5 min (${locationLog?.length} items)'),
+          Expanded(child: _logsWidget(locationLog)),
         ],
       );
 

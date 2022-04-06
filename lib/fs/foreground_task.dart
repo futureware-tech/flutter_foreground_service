@@ -76,6 +76,8 @@ class FirstTaskHandler extends TaskHandler {
       historyBox = await Hive.openBox<List<String>>(boxName);
       beaconExample.beaconMonitoringBox = await Hive.openBox<List<String>>(
           beaconExample.beaconMonitoringBoxName);
+      beaconExample.beaconRangingBox =
+          await Hive.openBox<List<String>>(beaconExample.beaconRangingBoxName);
     } catch (e) {
       print(e.toString());
     }

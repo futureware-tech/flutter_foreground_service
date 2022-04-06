@@ -3,3 +3,9 @@ class BeaconMonitoringLog {
 
   List<String> log;
 }
+
+class BeaconRangingLog {
+  BeaconRangingLog(this.log);
+
+  List<String> log;
+}
