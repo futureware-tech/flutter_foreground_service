@@ -76,8 +76,10 @@ class BeaconExample {
     try {
       await flutterBeacon.initializeAndCheckScanning;
       rangingResult(regions).listen((RangingResult rangingResult) {
-        addRangingBeaconLog(
-            'Beacon with  idendifier: ${rangingResult.region.identifier} in range');
+        rangingResult.beacons.forEach((Beacon beacon) {
+          addRangingBeaconLog(
+              'Beacon with  proximityId: ${findIdentifierFromProximity(beacon.proximityUUID)} in range');
+        });
       });
       monitoringResult(regions).listen((MonitoringResult monitoringResult) {
         addMonitoringBeaconLog(
@@ -88,6 +90,13 @@ class BeaconExample {
     } catch (e) {
       print(e.toString());
     }
+  }
+
+  String findIdentifierFromProximity(String proximityId) {
+    return regions
+        .firstWhere((Region region) =>
+            region.proximityUUID?.toLowerCase() == proximityId.toLowerCase())
+        .identifier;
   }
 
   void addMonitoringBeaconLog(String log) {
