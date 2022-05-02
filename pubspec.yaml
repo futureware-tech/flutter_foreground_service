@@ -86,3 +86,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+dependency_overrides:
+  # Uncomment the following to override any dependency.
+  flutter_beacon:
+    path: ../flutter_beacon

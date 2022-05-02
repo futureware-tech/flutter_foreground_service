@@ -77,15 +77,15 @@ class BeaconExample {
       await flutterBeacon.initializeAndCheckScanning;
       rangingResult(regions).listen((RangingResult rangingResult) {
         rangingResult.beacons.forEach((Beacon beacon) {
-          addRangingBeaconLog(
-              'Beacon with  proximityId: ${findIdentifierFromProximity(beacon.proximityUUID)} in range');
+          // addRangingBeaconLog(
+          //     'Beacon with  proximityId: ${findIdentifierFromProximity(beacon.proximityUUID)} in range');
         });
       });
       monitoringResult(regions).listen((MonitoringResult monitoringResult) {
-        addMonitoringBeaconLog(
-            'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringEventType.toString()}');
-        addMonitoringBeaconLog(
-            'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringState.toString()}');
+        // addMonitoringBeaconLog(
+        //     'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringEventType.toString()}');
+        // addMonitoringBeaconLog(
+        //     'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringState.toString()}');
       });
     } catch (e) {
       print(e.toString());

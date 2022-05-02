@@ -60,9 +60,9 @@ class FirstTaskHandler extends TaskHandler {
 
       beaconExample.start();
 
-      beaconPeriodicTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-        beaconExample.sendData(sendPort);
-      });
+      // beaconPeriodicTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      //   beaconExample.sendData(sendPort);
+      // });
     } catch (e) {
       print(e.toString());
     }

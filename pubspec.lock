@@ -198,11 +198,9 @@ packages:
   flutter_beacon:
     dependency: "direct main"
     description:
-      path: "."
-      ref: generated_plugin_registrant_fails_init
-      resolved-ref: "6b729af470e1ec68899a43a5f7f976b400ca0b88"
-      url: "https://github.com/futureware-tech/flutter_beacon.git"
-    source: git
+      path: "../flutter_beacon"
+      relative: true
+    source: path
     version: "0.5.0"
   flutter_foreground_task:
     dependency: "direct main"
