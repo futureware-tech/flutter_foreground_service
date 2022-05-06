@@ -15,6 +15,8 @@ class BeaconExample {
   late Box? beaconRangingBox;
   final beaconRangingBoxName = 'beaconRanging';
 
+  List<String> _latestRangingBeaconsResult = <String>[];
+
   final regions = <Region>[
     Region(
       identifier: '001B44113AB7',
@@ -77,29 +79,33 @@ class BeaconExample {
       await flutterBeacon.initializeAndCheckScanning;
       rangingResult(regions).listen((RangingResult rangingResult) {
         rangingResult.beacons.forEach((Beacon beacon) {
-          // addRangingBeaconLog(
-          //     'Beacon with  proximityId: ${findIdentifierFromProximity(beacon.proximityUUID)} in range');
+          final log =
+              'Beacon with  proximityId: ${findIdentifierFromProximity(beacon.proximityUUID)} in range';
+          if (!_latestRangingBeaconsResult.contains(
+              '${findIdentifierFromProximity(beacon.proximityUUID)}')) {
+            _latestRangingBeaconsResult
+                .add('${findIdentifierFromProximity(beacon.proximityUUID)}');
+          }
+          print(log);
         });
       });
       monitoringResult(regions).listen((MonitoringResult monitoringResult) {
-        // addMonitoringBeaconLog(
-        //     'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringEventType.toString()}');
-        // addMonitoringBeaconLog(
-        //     'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringState.toString()}');
+        addMonitoringBeaconLogToHive(
+            'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringEventType.toString()}');
+        addMonitoringBeaconLogToHive(
+            'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringState.toString()}');
       });
     } catch (e) {
       print(e.toString());
     }
   }
 
-  String findIdentifierFromProximity(String proximityId) {
-    return regions
-        .firstWhere((Region region) =>
-            region.proximityUUID?.toLowerCase() == proximityId.toLowerCase())
-        .identifier;
-  }
+  String findIdentifierFromProximity(String proximityId) => regions
+      .firstWhere((Region region) =>
+          region.proximityUUID?.toLowerCase() == proximityId.toLowerCase())
+      .identifier;
 
-  void addMonitoringBeaconLog(String log) {
+  void addMonitoringBeaconLogToHive(String log) {
     List<String> list =
         beaconMonitoringBox?.get(beaconMonitoringBoxName) ?? <String>[];
     list.add(
@@ -109,14 +115,20 @@ class BeaconExample {
     print('Beacon monitoring log: $log');
   }
 
-  void addRangingBeaconLog(String log) {
+  Future<void>? addRangingBeaconLogListToHive(List<String> beaconsIds) {
     List<String> list =
         beaconRangingBox?.get(beaconRangingBoxName) ?? <String>[];
-    list.add(
-        '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - $log');
 
-    beaconRangingBox?.put(beaconRangingBoxName, list);
-    print('Beacon ranging log: $log');
+    String log = beaconsIds.join(', ');
+
+    if (log.isNotEmpty) {
+      list.add(
+          '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - $log');
+    } else {
+      list.add(
+          '${DateFormat(DateFormat.HOUR24_MINUTE_SECOND).format(DateTime.now())} - no beacons');
+    }
+    return beaconRangingBox?.put(beaconRangingBoxName, list);
   }
 
   Future<void> stop() async {
@@ -129,9 +141,9 @@ class BeaconExample {
       sendPort?.send(BeaconMonitoringLog(
           beaconMonitoringBox?.get(beaconMonitoringBoxName)));
     }
-    if (beaconRangingBox?.get(beaconRangingBoxName) != null) {
-      sendPort
-          ?.send(BeaconRangingLog(beaconRangingBox?.get(beaconRangingBoxName)));
-    }
+    addRangingBeaconLogListToHive(_latestRangingBeaconsResult);
+    _latestRangingBeaconsResult.clear();
+    sendPort
+        ?.send(BeaconRangingLog(beaconRangingBox?.get(beaconRangingBoxName)));
   }
 }

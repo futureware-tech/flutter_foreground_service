@@ -16,7 +16,6 @@ void startCallback() {
 
 class FirstTaskHandler extends TaskHandler {
   late Timer periodicTimer;
-  late Timer beaconPeriodicTimer;
   late Box historyBox;
   final boxName = 'history';
 
@@ -54,15 +53,11 @@ class FirstTaskHandler extends TaskHandler {
         latestPosition = position;
       });
 
+      beaconExample.start();
       periodicTimer = Timer.periodic(const Duration(minutes: 5), (_) {
         _updateLocation(sendPort, latestPosition);
+        beaconExample.sendData(sendPort);
       });
-
-      beaconExample.start();
-
-      // beaconPeriodicTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      //   beaconExample.sendData(sendPort);
-      // });
     } catch (e) {
       print(e.toString());
     }
@@ -108,7 +103,6 @@ class FirstTaskHandler extends TaskHandler {
     // You can use the clearAllData function to clear all the stored data.
     await FlutterForegroundTask.clearAllData();
     periodicTimer.cancel();
-    beaconPeriodicTimer.cancel();
     _positionSubscription.cancel();
     beaconExample.stop();
   }

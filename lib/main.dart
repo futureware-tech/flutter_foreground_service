@@ -197,8 +197,7 @@ class _ExampleAppState extends State<ExampleApp>
   Widget _buildBeaconMonitoringContentView() => Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-              'Tracking history every 5 sec (${beaconMonitoringLog?.length} items)'),
+          Text('Updates in 5 min (${beaconMonitoringLog?.length} items)'),
           Expanded(child: _logsWidget(beaconMonitoringLog)),
         ],
       );
@@ -206,8 +205,7 @@ class _ExampleAppState extends State<ExampleApp>
   Widget _buildBeaconRangingContentView() => Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-              'Tracking history every 5 sec (${beaconRangingLog?.length} items)'),
+          Text('Updates in 5 min (${beaconRangingLog?.length} items)'),
           Expanded(child: _logsWidget(beaconRangingLog)),
         ],
       );
