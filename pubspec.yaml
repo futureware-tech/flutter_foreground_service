@@ -88,5 +88,5 @@ flutter:
 
 dependency_overrides:
   # Uncomment the following to override any dependency.
-  flutter_beacon:
-    path: ../flutter_beacon
+  # flutter_beacon:
+  #   path: ../flutter_beacon
