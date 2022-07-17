@@ -87,10 +87,11 @@ class FirstTaskHandler extends TaskHandler {
   }
 
   void _addEvent(String event, SendPort? sendPort) {
-    List<String> list = historyBox.get('history') ?? <String>[];
+    List<String> list = historyBox.get(boxName) ?? <String>[];
     list.add(event);
 
-    historyBox.put('history', list);
+    historyBox.put(boxName, list);
+    // This method sends data from the "foreground task" isolate to the UI isolate
     sendPort?.send(list);
   }
 
@@ -98,7 +99,7 @@ class FirstTaskHandler extends TaskHandler {
   Future<void> onEvent(DateTime timestamp, SendPort? sendPort) async {}
 
   @override
-  Future<void> onDestroy(DateTime timestamp) async {
+  Future<void> onDestroy(DateTime timestamp, SendPort? sendPort) async {
     _addEvent('-- Service stopped at $timestamp --', null);
     // You can use the clearAllData function to clear all the stored data.
     await FlutterForegroundTask.clearAllData();

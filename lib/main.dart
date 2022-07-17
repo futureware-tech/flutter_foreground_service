@@ -55,26 +55,19 @@ class _ExampleAppState extends State<ExampleApp>
   }
 
   Future<bool> _checkPermissions() async {
-    bool serviceEnabled;
     bool isPermissionGranted;
+    bool isBluetoothGranted;
 
-    // Test if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
-      return Future.error('Location services are disabled.');
-    }
-
-    // TODO: Handle Permissions
     if (Platform.isAndroid) {
+      isBluetoothGranted = await Permission.bluetoothScan.request().isGranted;
       isPermissionGranted =
           await Permission.locationWhenInUse.request().isGranted;
       final isPermissionAlwaysGranted =
           await Permission.locationAlways.request().isGranted;
 
-      if (isPermissionGranted == true && isPermissionAlwaysGranted == true) {
+      if (isBluetoothGranted == true &&
+          isPermissionGranted == true &&
+          isPermissionAlwaysGranted == true) {
         return true;
       }
     } else {
