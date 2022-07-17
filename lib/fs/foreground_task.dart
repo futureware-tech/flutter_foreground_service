@@ -31,10 +31,9 @@ class FirstTaskHandler extends TaskHandler {
       print('init hive');
       await initHive();
       // You can use the getData function to get the data you saved.
-      // TODO: failing
-      // final customData =
-      //     await FlutterForegroundTask.getData<String>(key: 'customData');
-      // print('customData: $customData');
+      final customData =
+          await FlutterForegroundTask.getData<String>(key: 'customData');
+      print('customData: $customData');
 
       _addEvent('-- Service (re)started --', sendPort);
       // Get the first value
