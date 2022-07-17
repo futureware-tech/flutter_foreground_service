@@ -17,7 +17,7 @@ void startCallback() {
 class FirstTaskHandler extends TaskHandler {
   late Timer periodicTimer;
   late Box historyBox;
-  final boxName = 'history';
+  final locationBoxName = 'history';
 
   late StreamSubscription<Position> _positionSubscription;
 
@@ -67,7 +67,7 @@ class FirstTaskHandler extends TaskHandler {
       final path = (await getApplicationDocumentsDirectory()).path.toString();
       Hive.init(path);
 
-      historyBox = await Hive.openBox<List<String>>(boxName);
+      historyBox = await Hive.openBox<List<String>>(locationBoxName);
       beaconExample.beaconMonitoringBox = await Hive.openBox<List<String>>(
           beaconExample.beaconMonitoringBoxName);
       beaconExample.beaconRangingBox =
@@ -85,11 +85,12 @@ class FirstTaskHandler extends TaskHandler {
     print('Location lat ${location.latitude} lon = ${location.longitude}');
   }
 
+  // Adds new location value to hive and sends all location data to the UI isolate
   void _addEvent(String event, SendPort? sendPort) {
-    List<String> list = historyBox.get(boxName) ?? <String>[];
+    List<String> list = historyBox.get(locationBoxName) ?? <String>[];
     list.add(event);
+    historyBox.put(locationBoxName, list);
 
-    historyBox.put(boxName, list);
     // This method sends data from the "foreground task" isolate to the UI isolate
     sendPort?.send(list);
   }

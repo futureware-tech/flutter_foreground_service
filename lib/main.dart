@@ -98,7 +98,10 @@ class _ExampleAppState extends State<ExampleApp>
     // You can save data using the saveData function.
     await FlutterForegroundTask.saveData(key: 'customData', value: 'hello');
 
+    // Used to receive messages from Foreground Service
     ReceivePort? receivePort;
+    // If foreground service is already running, reattach it to the UI thread.
+    // It can happen when UI isolate was killed.
     if (await FlutterForegroundTask.isRunningService) {
       receivePort = await FlutterForegroundTask.restartService();
     } else {
@@ -112,14 +115,19 @@ class _ExampleAppState extends State<ExampleApp>
     if (receivePort != null) {
       _receivePort = receivePort;
       _receivePort?.listen((message) {
+        // Have we received Location data?
         if (message is List<String>) {
           setState(() {
             locationLog = message;
           });
+          // Have we received Beacon Monitoring data?
+          // Beacon enter or exit region
         } else if (message is BeaconMonitoringLog) {
           setState(() {
             beaconMonitoringLog = message.log;
           });
+          // Have we received Beacon Ranging data?
+          // It contains information about all beacons that are in range
         } else if (message is BeaconRangingLog) {
           setState(() {
             beaconRangingLog = message.log;

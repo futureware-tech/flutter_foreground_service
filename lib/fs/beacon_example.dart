@@ -77,6 +77,7 @@ class BeaconExample {
     print('Start beacon service');
     try {
       await flutterBeacon.initializeAndCheckScanning;
+      // Listen to what beacons are in range
       rangingResult(regions).listen((RangingResult rangingResult) {
         rangingResult.beacons.forEach((Beacon beacon) {
           final log =
@@ -89,6 +90,7 @@ class BeaconExample {
           print(log);
         });
       });
+      // Listen to what beacons enter/exit region
       monitoringResult(regions).listen((MonitoringResult monitoringResult) {
         addMonitoringBeaconLogToHive(
             'Monitoring result ${monitoringResult.region.identifier}: ${monitoringResult.monitoringEventType.toString()}');
